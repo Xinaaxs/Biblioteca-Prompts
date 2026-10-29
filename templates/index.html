@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Biblioteca de Prompts</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/estilos.css') }}"
+    >
+</head>
+<body>
+
+    <header class="encabezado">
+        <div class="encabezado-contenido">
+            <div class="icono-logo">P</div>
+
+            <div>
+                <h1>Biblioteca de Prompts</h1>
+                <p>Guarda, organiza y reutiliza tus mejores prompts.</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="contenedor">
+
+        <section class="formulario">
+            {% if prompt_editando %}
+                <h2>Editar prompt</h2>
+                <p class="subtitulo">
+                    Modifica el título o el contenido y guarda los cambios.
+                </p>
+            {% else %}
+                <h2>Crear un nuevo prompt</h2>
+                <p class="subtitulo">
+                    Guarda tus ideas para encontrarlas cuando las necesites.
+                </p>
+            {% endif %}
+
+            {% if request.args.get('guardado') == '1' %}
+                <p class="mensaje exito">¡Prompt guardado correctamente!</p>
+            {% endif %}
+
+            {% if request.args.get('actualizado') == '1' %}
+                <p class="mensaje exito">¡Prompt actualizado correctamente!</p>
+            {% endif %}
+
+            {% if request.args.get('eliminado') == '1' %}
+                <p class="mensaje exito">¡Prompt eliminado correctamente!</p>
+            {% endif %}
+
+            <form
+                action="{% if prompt_editando %}{{ url_for('editar_prompt', id=prompt_editando.id) }}{% else %}{{ url_for('inicio') }}{% endif %}"
+                method="POST"
+            >
+                <label for="titulo">Título del prompt</label>
+
+                <input
+                    type="text"
+                    id="titulo"
+                    name="titulo"
+                    maxlength="100"
+                    placeholder="Ej. Crear una actividad educativa"
+                    value="{{ prompt_editando.titulo if prompt_editando else '' }}"
+                    required
+                >
+
+                <label for="contenido">Contenido del prompt</label>
+
+                <textarea
+                    id="contenido"
+                    name="contenido"
+                    rows="7"
+                    placeholder="Escribe aquí tu prompt..."
+                    required
+                >{{ prompt_editando.contenido if prompt_editando else '' }}</textarea>
+
+                {% if prompt_editando %}
+                    <button type="submit" class="boton boton-guardar">
+                        Guardar cambios
+                    </button>
+
+                    <a href="{{ url_for('inicio') }}" class="boton boton-cancelar">
+                        Cancelar edición
+                    </a>
+                {% else %}
+                    <button type="submit" class="boton boton-guardar">
+                        + Guardar prompt
+                    </button>
+                {% endif %}
+            </form>
+        </section>
+
+        <section class="biblioteca">
+            <div class="titulo-biblioteca">
+                <div>
+                    <h2>Mis prompts guardados</h2>
+                    <p class="subtitulo">
+                        Consulta y administra tus prompts.
+                    </p>
+                </div>
+
+                <span class="contador">
+                    {{ prompts|length }}
+                    {% if prompts|length == 1 %}prompt{% else %}prompts{% endif %}
+                </span>
+            </div>
+
+            {% if prompts %}
+                <div class="lista-prompts">
+                    {% for prompt in prompts %}
+                        <article class="tarjeta">
+                            <div class="tarjeta-cabecera">
+                                <span class="etiqueta">PROMPT</span>
+                                <span class="id-prompt">#{{ prompt.id }}</span>
+                            </div>
+
+                            <h3>{{ prompt.titulo }}</h3>
+
+                            <p class="contenido-prompt">{{ prompt.contenido }}</p>
+
+                            <div class="acciones">
+                                <a
+                                    href="{{ url_for('editar_prompt', id=prompt.id) }}"
+                                    class="boton boton-editar"
+                                >
+                                    <span aria-hidden="true">✎</span> Editar
+                                </a>
+
+                                <button
+                                    type="button"
+                                    class="boton boton-copiar"
+                                    onclick="copiarPrompt(this)"
+                                >
+                                    Copiar
+                                </button>
+
+                                <form
+                                    action="{{ url_for('eliminar_prompt', id=prompt.id) }}"
+                                    method="POST"
+                                    class="formulario-eliminar"
+                                    onsubmit="return confirm('¿Seguro que deseas eliminar este prompt? Esta acción no se puede deshacer.');"
+                                >
+                                    <button type="submit" class="boton boton-eliminar">
+                                        Eliminar
+                                    </button>
+                                </form>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="vacio">
+                    <div class="icono-vacio">✎</div>
+                    <h3>Aún no tienes prompts</h3>
+                    <p>Usa el formulario para guardar tu primer prompt.</p>
+                </div>
+            {% endif %}
+        </section>
+
+    </main>
+
+
+    <script>
+        async function copiarPrompt(boton) {
+            const tarjeta = boton.closest(".tarjeta");
+            const contenido = tarjeta
+                .querySelector(".contenido-prompt")
+                .textContent
+                .trim();
+
+            try {
+                await navigator.clipboard.writeText(contenido);
+
+                const textoOriginal = boton.textContent;
+                boton.textContent = "¡Copiado!";
+
+                setTimeout(() => {
+                    boton.textContent = textoOriginal;
+                }, 2000);
+            } catch (error) {
+                alert("No se pudo copiar el prompt. Inténtalo de nuevo.");
+            }
+        }
+    </script>
+
+</body>
+</html>
